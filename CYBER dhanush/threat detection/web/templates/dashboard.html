@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBER-dhanush // Autonomous Threat Detection SOC</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js for SOC Telemetry -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="soc-layout">
+    <!-- Top Cyber Header -->
+    <header class="soc-header">
+      <div class="header-brand">
+        <div class="brand-radar-pulse"></div>
+        <div>
+          <h1 class="brand-title">CYBER-dhanush <span class="version-tag">v2.4 [SIEM/IDS]</span></h1>
+          <p class="brand-subtitle">Autonomous Threat Correlation • MITRE ATT&CK Mapping • ML Anomaly Engine</p>
+        </div>
+      </div>
+
+      <div class="header-status-panel">
+        <div class="status-indicator">
+          <span class="status-dot pulse-green" id="engineStatusDot"></span>
+          <span class="status-label">ENGINE: <strong id="engineStatusText">ACTIVE</strong></span>
+        </div>
+        <div class="threat-posture-badge" id="threatPostureBadge">
+          DEFCON 5 (SECURE)
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" onclick="exportReport()" title="Download Incident Audit JSON">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Report
+          </button>
+          <button class="btn btn-danger-outline" onclick="clearData()" title="Reset Session Alerts">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear Data
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top Key Metric Cards -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="card-icon blue-glow">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="card-data">
+          <span class="card-label">TOTAL EVENTS ANALYZED</span>
+          <span class="card-value" id="totalEvents">0</span>
+          <span class="card-subtext">Ingested HTTP & Host Streams</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon red-glow">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="card-data">
+          <span class="card-label">ACTIVE THREAT ALERTS</span>
+          <span class="card-value text-red" id="totalAlerts">0</span>
+          <span class="card-subtext" id="critAlertSubtext">0 Critical • 0 High</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon orange-glow">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="card-data">
+          <span class="card-label">ACTIVE DEFENSE (BLOCKED IPs)</span>
+          <span class="card-value text-orange" id="blockedIpsCount">0</span>
+          <span class="card-subtext">Automated Firewall Quarantine</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon green-glow">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        </div>
+        <div class="card-data">
+          <span class="card-label">HOST SYSTEM HEALTH</span>
+          <span class="card-value text-green" id="hostHealthVitals">CPU 0% | RAM 0%</span>
+          <span class="card-subtext" id="activeSocketsSubtext">Active Sockets: 0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Threat Injection & Incident Drill Bar -->
+    <section class="simulation-section">
+      <div class="simulation-header">
+        <div class="sim-title-group">
+          <span class="sim-badge">INTERACTIVE INCIDENT SIMULATOR</span>
+          <span class="sim-hint">Trigger realistic multi-vector cyber attacks to test real-time IDS/SIEM detection & auto-mitigation:</span>
+        </div>
+        <button class="btn btn-primary" id="toggleSimulatorBtn" onclick="toggleContinuousSimulation()">
+          <span class="btn-pulse-dot"></span>
+          <span id="simulatorBtnText">Start Continuous Attack Feed</span>
+        </button>
+      </div>
+
+      <div class="attack-button-cluster">
+        <button class="btn btn-attack" onclick="simulateAttack('sqli')">
+          <span class="attack-tag">EXPLOIT</span> SQL Injection
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('xss')">
+          <span class="attack-tag">CLIENT</span> Cross-Site Scripting
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('rce')">
+          <span class="attack-tag">EXEC</span> Remote Code Execution
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('lfi')">
+          <span class="attack-tag">DISC</span> Path Traversal / LFI
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('brute_force')">
+          <span class="attack-tag">AUTH</span> Brute-Force Storm
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('port_scan')">
+          <span class="attack-tag">RECON</span> Port Scan Sweep
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('dos')">
+          <span class="attack-tag">IMPACT</span> DoS Traffic Flood
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('anomaly')">
+          <span class="attack-tag">ML</span> High-Entropy Anomaly
+        </button>
+        <button class="btn btn-attack" onclick="simulateAttack('scanner')">
+          <span class="attack-tag">PROBE</span> Scanner User-Agent
+        </button>
+        <button class="btn btn-attack hids-btn" onclick="runHostScan()">
+          <span class="attack-tag">HIDS</span> Run Host Audit
+        </button>
+      </div>
+    </section>
+
+    <!-- Visual Analytics Charts Row -->
+    <section class="charts-row">
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3>THREAT SEVERITY BREAKDOWN</h3>
+          <span class="chart-subtitle">Alerts categorized by CVSS severity level</span>
+        </div>
+        <div class="chart-canvas-wrapper">
+          <canvas id="severityChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3>MITRE ATT&CK TACTICS DISTRIBUTION</h3>
+          <span class="chart-subtitle">Adversary Tactics correlation</span>
+        </div>
+        <div class="chart-canvas-wrapper">
+          <canvas id="mitreChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-Column Feed: Live Alerts & Active Defense Blacklist -->
+    <section class="soc-data-split">
+      <!-- Live Real-Time Alert Stream -->
+      <div class="panel alert-feed-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="live-dot pulse-red"></span>
+            <h2>REAL-TIME THREAT LOGS</h2>
+            <span class="badge" id="feedCounterBadge">0 alerts</span>
+          </div>
+          <span class="panel-action-hint">Auto-refreshes every 2s</span>
+        </div>
+
+        <div class="alert-feed-list" id="alertFeedList">
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <p>No active security alerts. System is monitoring network traffic and host operations.</p>
+            <span class="empty-hint">Use the attack buttons above to simulate an intrusion scenario.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Defense & Top Malicious Actors -->
+      <div class="panel blacklist-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <h2>ACTIVE DEFENSE / BLACKLIST</h2>
+          </div>
+          <span class="badge badge-warning" id="blockedCountBadge">0 Quarantined</span>
+        </div>
+
+        <div class="blacklist-table-wrapper">
+          <table class="soc-table" id="blacklistTable">
+            <thead>
+              <tr>
+                <th>OFFENDING IP</th>
+                <th>REASON</th>
+                <th>ALERTS</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="blacklistTableBody">
+              <tr>
+                <td colspan="4" class="text-center text-muted">No IPs currently blacklisted.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Top Offending Hosts Leaderboard -->
+        <div class="top-offenders-box">
+          <h4 class="subhead">TOP ATTACKING SOURCES</h4>
+          <div id="topOffendersList" class="offenders-list">
+            <span class="text-muted">Awaiting traffic data...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

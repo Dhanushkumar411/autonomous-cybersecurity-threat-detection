@@ -1,0 +1,7 @@
+10.0.0.1 - - [24/Oct/2026:12:00:01 +0000] "GET /index.html HTTP/1.1" 200 1024
+10.0.0.2 - - [24/Oct/2026:12:00:02 +0000] "GET /about HTTP/1.1" 200 450
+198.51.100.45 - - [24/Oct/2026:12:00:05 +0000] "GET /products?id=1'%20UNION%20SELECT%20username,password%20FROM%20users-- HTTP/1.1" 500 230
+198.51.100.45 - - [24/Oct/2026:12:00:07 +0000] "GET /search?q=<script>alert(document.cookie)</script> HTTP/1.1" 200 890
+203.0.113.88 - - [24/Oct/2026:12:00:09 +0000] "GET /download?file=../../../../etc/passwd HTTP/1.1" 403 140
+185.220.101.5 - - [24/Oct/2026:12:00:12 +0000] "GET /cgi-bin/ping?host=127.0.0.1;%20whoami HTTP/1.1" 500 95
+10.0.0.5 - - [24/Oct/2026:12:00:15 +0000] "GET /contact HTTP/1.1" 200 600
